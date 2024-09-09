@@ -1,12 +1,13 @@
-from PIL import Image
-from io import BytesIO
-from datetime import datetime
+import os
 import requests
 import streamlit as st
 
-from fpdf import FPDF
-import os
+from PIL import Image
 from io import BytesIO
+from datetime import datetime
+from fpdf import FPDF
+
+
 
 # Функция для загрузки изображения
 def load_image():
@@ -30,14 +31,17 @@ def load_image():
             # Отправка POST-запроса к FastAPI
             url = "http://localhost:8000/api/classify"
             files = {"image": (uploaded_file.name, uploaded_file, uploaded_file.type)} 
+            
             try:
                 response = requests.post(url, files=files)
                 st.write(f"Код ответа: {response.status_code}")
+                
                 if response.status_code == 200:
                     classification_result = response.json()
                     st.write(classification_result)
                 else:
                     st.error(f"Ошибка при классификации изображения. Код ответа: {response.status_code}")
+            
             except Exception as e:
                 st.error(f"Ошибка при отправке запроса: {e}")
 
