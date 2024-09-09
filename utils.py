@@ -20,7 +20,7 @@ def load_image():
             st.success('Success')
             file_info = {
 						    "Имя файла": uploaded_file.name,
-						    "Размер (KB)": len(image_data) / 1024.0,  # Убедитесь, что это float
+						    "Размер (KB)": len(image_data) / 1024.0,  
 						    "Формат": Image.open(BytesIO(image_data)).format,
 						    "Время загрузки": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 						}
