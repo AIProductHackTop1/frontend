@@ -10,7 +10,7 @@ from fpdf import FPDF
 
 
 # Функция для загрузки изображения
-def load_image():
+def load_image(backend_url: str):
     uploaded_file = st.file_uploader("Перетащите сюда изображение", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         image_data = uploaded_file.getvalue()
@@ -29,7 +29,7 @@ def load_image():
             st.write("Отправка запроса...")
 
             # Отправка POST-запроса к FastAPI
-            url = "http://localhost:8000/api/classify"
+            url = f"{backend_url}/api/classify"
             files = {"image": (uploaded_file.name, uploaded_file, uploaded_file.type)} 
             
             try:
