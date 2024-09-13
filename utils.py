@@ -1,6 +1,8 @@
 import os
 import requests
 import streamlit as st
+import cv2
+import numpy as np
 
 from PIL import Image
 from io import BytesIO
@@ -8,17 +10,31 @@ from datetime import datetime
 from fpdf import FPDF
 
 
+# Функция для отрисовки bboxes
+def draw_boxes_on_image(image: np.ndarray, detections) -> np.ndarray:
+    image = image.copy()
+    for detection in detections[0].boxes:
+        x1, y1, x2, y2 = detection.xyxy  # Координаты бокса
+        confidence = detection.conf  # Уверенность модели
+        class_id = int(detection.cls)  # Класс объекта
+        
+        # Рисуем прямоугольник на изображении
+        cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+        cv2.putText(image, f'Class {class_id}, Conf: {confidence:.2f}', (int(x1), int(y1) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    
+    return image
 
 # Функция для загрузки изображения
 def load_image(backend_url: str):
     uploaded_file = st.file_uploader("Перетащите сюда изображение", type=["jpg", "jpeg", "png"])
+    cls_res = None
     if uploaded_file is not None:
         image_data = uploaded_file.getvalue()
         st.image(image_data)
         result = st.button('Классифицировать изображение')
         
         if result:
-            st.success('Success')
             file_info = {
 						    "Имя файла": uploaded_file.name,
 						    "Размер (KB)": len(image_data) / 1024.0,  
@@ -34,11 +50,23 @@ def load_image(backend_url: str):
             
             try:
                 response = requests.post(url, files=files)
-                st.write(f"Код ответа: {response.status_code}")
+                #st.write(f"Код ответа: {response.status_code}")
                 
                 if response.status_code == 200:
                     classification_result = response.json()
-                    st.write(classification_result)
+                    
+                    if classification_result['healthy_pallet'] == True:
+                        cls_res = "Паллет исправен"
+                        st.success('Success')
+                    else:
+                        cls_res = "Паллет неисправен"
+
+                    # Обновляем file_info с результатом классификации
+                    file_info["Результат классификации"] = cls_res
+                    
+                    # Отображение результата классификации
+                    st.markdown(f"### {cls_res}")
+
                 else:
                     st.error(f"Ошибка при классификации изображения. Код ответа: {response.status_code}")
             
@@ -49,13 +77,13 @@ def load_image(backend_url: str):
                 st.session_state.upload_history = []
             st.session_state.upload_history.append(file_info)
 
-        return Image.open(BytesIO(image_data))
+        return Image.open(BytesIO(image_data)), cls_res
     else:
         st.write("Пожалуйста, загрузите изображение")
-        return None
+        return None, None
 
 # Функция для создания PDF-файла
-def create_pdf(image=None, file_info=None):
+def create_pdf(image=None, file_info=None, classification_result=None):
     pdf = FPDF()
     pdf.add_page()
     
@@ -90,6 +118,11 @@ def create_pdf(image=None, file_info=None):
             pdf.cell(200, 10, txt=f"Размер (KB): {size_kb}", ln=True)
         pdf.cell(200, 10, txt=f"Формат: {file_info['Формат']}", ln=True)
         pdf.cell(200, 10, txt=f"Время загрузки: {file_info['Время загрузки']}", ln=True)
+
+    if classification_result is not None:
+        pdf.ln(10)
+        pdf.cell(200, 10, txt="Результат классификации:", ln=True)
+        pdf.cell(200, 10, txt=f"Классификация: {classification_result}", ln=True)
 
     pdf_output = pdf.output(dest='S').encode('latin1')  # Конвертация в байты с нужной кодировкой
     
