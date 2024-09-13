@@ -20,14 +20,14 @@ def main():
     # Вкладка 1: Загрузка изображения
     with tab1:
         st.header("Загрузите ваше изображение")
-        img = load_image(backend_url)
+        img, classification_result = load_image(backend_url)
 
     # Вкладка 2: Сформировать отчет
     with tab2:
         st.header("Сформировать отчет")
         if img and "upload_history" in st.session_state and st.session_state.upload_history:
             file_info = st.session_state.upload_history[-1]
-            pdf_file = create_pdf(image=img, file_info=file_info)
+            pdf_file = create_pdf(image=img, file_info=file_info, classification_result=classification_result)
         
             # Кнопка для скачивания PDF с изображением и логами
             st.download_button(label="Скачать PDF", data=pdf_file, file_name="report.pdf", mime="application/pdf")
